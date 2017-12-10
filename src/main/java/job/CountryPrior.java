@@ -20,16 +20,17 @@ import org.apache.hadoop.fs.FileSystem;
 public class CountryPrior extends  Configured implements Tool{
 
     //map类
-    public static class MyMap extends Mapper<Object, LongWritable, Text, IntWritable> {
+    public static class MyMap extends Mapper<Text, Text, Text, IntWritable> {
         private final static IntWritable one = new IntWritable(1);
-        protected void map(Object key, LongWritable value, Context context)
+        protected void map(Text key, Text value, Context context)
                 throws IOException, InterruptedException {
             InputSplit inputSplit=context.getInputSplit();
             Text dirNameRes=new Text();
 
-            String  dirName=((FileSplit)inputSplit).getPath().getName();
+            String  dirName=((FileSplit)inputSplit).getPath().getParent().getName();
+
             dirNameRes.set(dirName);
-            context.write(dirNameRes,one);
+            context.write(key,one);
         }
     }
     //reduce类
@@ -47,63 +48,6 @@ public class CountryPrior extends  Configured implements Tool{
             context.write(key, result);
         }
     }
-    //重写的inputFormat类
-    public static class CountryInputFormat extends FileInputFormat<Text, LongWritable> {
-        public CountryInputFormat() {
-        }
-
-        public RecordReader<Text, LongWritable> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-            return new CountryPrior.CountryInputFormat.CountryRecordReader();
-        }
-
-        public static class CountryRecordReader extends RecordReader<Text, LongWritable> {
-            private long length;
-            private long count;
-            private Text key = null;
-            private LongWritable value = null;
-            private String className = null;
-
-            public CountryRecordReader() {
-            }
-
-            public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-                FileSplit split = (FileSplit) inputSplit;
-                Path path = split.getPath();
-                String[] str = path.toString().split("/");
-                this.className = str[str.length - 1];//读取文件父目录名，也就是国家名称
-                FileSystem fs = path.getFileSystem(taskAttemptContext.getConfiguration());
-                FileStatus[] status = fs.listStatus(path);
-                this.length = (long) status.length;
-                this.count = 1L;
-            }
-            //重写initialize和nextKeyValue方法
-            public boolean nextKeyValue() throws IOException, InterruptedException {
-                if (this.count <= this.length) {
-                    this.key = new Text(this.className);//让key值=国家名称，value=1。
-                    this.value = new LongWritable(1L);
-                    ++this.count;
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-
-            public Text getCurrentKey() throws IOException, InterruptedException {
-                return this.key;
-            }
-
-            public LongWritable getCurrentValue() throws IOException, InterruptedException {
-                return this.value;
-            }
-
-            public float getProgress() throws IOException, InterruptedException {
-                return 0.0F;
-            }
-
-            public void close() throws IOException {
-            }
-        }
-    }
 
     //重写的run方法，设置hadoop运行的配置。
     public int run(String[] args)throws Exception{
@@ -111,7 +55,7 @@ public class CountryPrior extends  Configured implements Tool{
         conf.set("mapred.textoutputformat.separator",",");//key value 分隔符
         Job job = this.parseInputAndOutput(this, conf, args);
 
-        job.setInputFormatClass(CountryInputFormat.class);
+        job.setInputFormatClass(CountryWordInputFormat.class);
         // 3.3 set input path
         // FileInputFormat.addInputPath(job, new Path(args[0]));
         // 3.4 set mapper
