@@ -105,8 +105,8 @@ public class CountryPredition {
 
         CountryFrequencyEntity cf;
         while((str = br.readLine()) != null) {
-            String[] strs = str.split("\t");
-            int count = Integer.valueOf(strs[2]).intValue();
+            String[] strs = str.split(",");
+            int count = Integer.valueOf(strs[1]).intValue();
             total += count;
             cf = new CountryFrequencyEntity(strs[0], count);
             this.countryMap.put(strs[0], cf);
