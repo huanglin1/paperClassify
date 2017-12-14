@@ -2,6 +2,7 @@ package job;
 
 import java.io.IOException;
 
+import com.sun.org.apache.bcel.internal.generic.SWAP;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
@@ -28,7 +29,6 @@ public class CountryPrior extends  Configured implements Tool{
             Text dirNameRes=new Text();
 
             String  dirName=((FileSplit)inputSplit).getPath().getParent().getName();
-
             dirNameRes.set(dirName);
             context.write(key,one);
         }
